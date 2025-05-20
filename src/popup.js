@@ -19,6 +19,7 @@ const chunkIndicator = document.getElementById('chunk-indicator');
 const openOptionsBtn = document.getElementById('open-options-btn');
 const convertSelectionBtn = document.getElementById('convert-selection-btn');
 const retryBtn = document.getElementById('retry-btn');
+const refreshBtn = document.getElementById('refresh-btn');
 const playBtn = document.getElementById('play-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const prevChunkBtn = document.getElementById('prev-chunk-btn');
@@ -43,6 +44,14 @@ let currentChunkIndex = 0;
 let isConfigured = false;
 
 // Initialize popup
+// Add keyboard shortcut for refresh (F5)
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'F5') {
+    event.preventDefault(); // Prevent default page refresh
+    refreshUI();
+  }
+});
+
 document.addEventListener('DOMContentLoaded', initializePopup);
 
 function initializePopup() {
@@ -139,6 +148,7 @@ function setupEventListeners() {
   // Article conversion
   convertSelectionBtn.onclick = convertSelection;
   retryBtn.onclick = retryConversion;
+  refreshBtn.onclick = refreshUI;
   
   // Player controls
   playBtn.onclick = playAudio;
@@ -612,6 +622,52 @@ function clearLogs() {
       clearLogsBtn.textContent = 'Clear Logs';
       clearLogsBtn.disabled = false;
     }, 500);
+  });
+}
+
+// Refresh UI state from storage
+function refreshUI() {
+  console.log('Manually refreshing UI state');
+  
+  if (!currentArticleUrl) {
+    console.log('No current article URL to refresh');
+    return;
+  }
+  
+  // Show temporary refresh indicator
+  const currentView = document.querySelector('.card:not(.hidden)');
+  const viewId = currentView ? currentView.id : null;
+  
+  if (viewId === 'processing-view') {
+    progressText.textContent = 'Refreshing status...';
+  }
+  
+  // Force reload data from storage
+  chrome.storage.local.get(['article_' + currentArticleUrl], (result) => {
+    const articleData = result['article_' + currentArticleUrl];
+    
+    if (!articleData) {
+      console.log('No article data found for URL:', currentArticleUrl);
+      showView('no-article');
+      return;
+    }
+    
+    console.log('Refreshed article data from storage:', articleData);
+    currentArticleData = articleData;
+    
+    // Update UI based on current status
+    if (articleData.status === 'error') {
+      showView('error');
+      errorMessage.textContent = articleData.error || 'An unknown error occurred';
+    } else if (articleData.status === 'complete') {
+      showView('player');
+      loadAudio(0);
+    } else if (articleData.status === 'processing') {
+      showView('processing');
+      updateProcessingProgress();
+    } else {
+      showView('no-article');
+    }
   });
 }
 
