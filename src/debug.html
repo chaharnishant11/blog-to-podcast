@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog-to-Podcast Debug</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      color: #333;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 24px;
+      color: #4285f4;
+    }
+    
+    .section {
+      margin-bottom: 32px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+    
+    .status-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    
+    .status-card {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      min-width: 200px;
+    }
+    
+    .status-label {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .status-value {
+      font-size: 24px;
+      font-weight: 500;
+    }
+    
+    .status-value.error {
+      color: #c5221f;
+    }
+    
+    .status-value.success {
+      color: #137333;
+    }
+    
+    .status-value.warning {
+      color: #ea8600;
+    }
+    
+    .log-container {
+      max-height: 500px;
+      overflow-y: auto;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    
+    .log-entry {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .log-timestamp {
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .log-event {
+      font-weight: bold;
+      color: #1a73e8;
+    }
+    
+    .log-data {
+      margin-top: 4px;
+      color: #444;
+      white-space: pre-wrap;
+    }
+    
+    .button-container {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background-color: #3367d6;
+    }
+    
+    button.secondary {
+      background-color: #f1f3f4;
+      color: #333;
+    }
+    
+    button.secondary:hover {
+      background-color: #e8eaed;
+    }
+    
+    button.danger {
+      background-color: #ea4335;
+    }
+    
+    button.danger:hover {
+      background-color: #d93025;
+    }
+    
+    .cache-item {
+      margin-bottom: 16px;
+      padding: 16px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .cache-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .cache-item-title {
+      font-weight: 500;
+      font-size: 16px;
+    }
+    
+    .cache-item-url {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    
+    .cache-item-details {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+    
+    .cache-item-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Blog-to-Podcast Debug</h1>
+  
+  <div class="section">
+    <h2 class="section-title">Service Worker Status</h2>
+    <div class="status-container">
+      <div class="status-card">
+        <div class="status-label">Status</div>
+        <div class="status-value" id="worker-status">Unknown</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Active Jobs</div>
+        <div class="status-value" id="active-jobs">0</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Queue Length</div>
+        <div class="status-value" id="queue-length">0</div>
+      </div>
+      <div class="status-card">
+        <div class="status-label">Last Active</div>
+        <div class="status-value" id="last-active">-</div>
+      </div>
+    </div>
+    <div class="button-container">
+      <button id="refresh-status">Refresh Status</button>
+      <button id="ping-worker" class="secondary">Ping Worker</button>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2 class="section-title">Logs</h2>
+    <div class="log-container" id="log-container">
+      <div class="log-entry">
+        <span class="log-timestamp">Loading logs...</span>
+      </div>
+    </div>
+    <div class="button-container">
+      <button id="refresh-logs">Refresh Logs</button>
+      <button id="clear-logs" class="danger">Clear Logs</button>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2 class="section-title">Cache Management</h2>
+    <div id="cache-container">
+      <div class="log-entry">
+        <span class="log-timestamp">Loading cache...</span>
+      </div>
+    </div>
+    <div class="button-container">
+      <button id="refresh-cache">Refresh Cache</button>
+      <button id="clear-cache" class="danger">Clear All Cache</button>
+    </div>
+  </div>
+  
+  <script src="debug.js"></script>
+</body>
+</html>

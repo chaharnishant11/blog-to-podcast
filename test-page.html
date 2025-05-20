@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog-to-Podcast Test Article</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        article {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Article for Blog-to-Podcast</h1>
+    
+    <article>
+        <h2>The Future of AI in Content Creation</h2>
+        
+        <p>Artificial intelligence has transformed numerous industries, but its impact on content creation has been particularly profound. From generating text to creating images and even composing music, AI tools are becoming increasingly sophisticated and accessible.</p>
+        
+        <p>One of the most significant developments in AI content creation has been the emergence of large language models (LLMs). These models, trained on vast amounts of text data, can generate human-like text, answer questions, and even engage in conversation. They're being used for everything from drafting emails to writing marketing copy.</p>
+        
+        <p>However, the rise of AI in content creation isn't without challenges. Questions about copyright, authenticity, and the potential displacement of human creators loom large. As AI tools become more advanced, the line between human and machine-generated content becomes increasingly blurred.</p>
+        
+        <p>Despite these concerns, many see AI as a tool that can enhance human creativity rather than replace it. By automating routine tasks and providing inspiration, AI can free up human creators to focus on more complex and creative aspects of their work.</p>
+        
+        <p>The future of AI in content creation is likely to involve a hybrid approach, with humans and machines working together. AI might generate initial drafts or ideas, which human creators then refine and enhance. This collaboration could lead to new forms of content that wouldn't be possible with either humans or AI working alone.</p>
+        
+        <p>As we move forward, it will be essential to develop ethical guidelines and best practices for AI content creation. Transparency about when AI is being used, fair compensation for human creators whose work is used to train AI models, and ensuring diversity in AI training data are all important considerations.</p>
+        
+        <p>In conclusion, while AI is transforming content creation in significant ways, the most promising future lies not in replacing human creativity but in augmenting it. By embracing the strengths of both humans and machines, we can create a more innovative and inclusive content ecosystem.</p>
+    </article>
+    
+    <div id="debug-output" style="background: #f5f5f5; padding: 20px; border: 1px solid #ddd; margin-top: 20px;">
+        <h3>Debug Output</h3>
+        <pre id="logs"></pre>
+    </div>
+    
+    <script>
+        // Add debug logging to help troubleshoot the extension
+        const logElement = document.getElementById('logs');
+        
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+        }
+        
+        // Log page load
+        addLog('Test page loaded');
+        
+        // Check if the extension's content script is running
+        setTimeout(() => {
+            if (!window._blogToPodcastDetected) {
+                addLog('WARNING: Blog-to-Podcast extension content script not detected');
+            }
+        }, 2000);
+        
+        // Expose a global variable for the extension to mark its presence
+        window._blogToPodcastDetected = false;
+        
+        // Override console.log to capture extension logs
+        const originalConsoleLog = console.log;
+        console.log = function() {
+            // Call the original console.log
+            originalConsoleLog.apply(console, arguments);
+            
+            // Add to our debug output if it contains certain keywords
+            const logString = Array.from(arguments).join(' ');
+            if (logString.includes('Blog-to-Podcast') || 
+                logString.includes('article') || 
+                logString.includes('extract')) {
+                addLog(logString);
+                
+                // Mark extension as detected
+                window._blogToPodcastDetected = true;
+            }
+        };
+    </script>
+</body>
+</html>

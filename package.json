@@ -1,0 +1,27 @@
+{
+  "name": "blog-to-podcast",
+  "version": "0.1.0",
+  "description": "Chrome extension to convert blog articles to podcasts using Murf.ai",
+  "scripts": {
+    "watch": "web-ext run --source-dir ./src",
+    "build": "node build.js",
+    "web-ext-build": "web-ext build --source-dir ./src --artifacts-dir ./dist",
+    "zip": "web-ext build --source-dir ./src --artifacts-dir ./dist --overwrite-dest"
+  },
+  "keywords": [
+    "chrome-extension",
+    "podcast",
+    "text-to-speech",
+    "murf"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "archiver": "^5.3.1",
+    "web-ext": "^7.6.2"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.4.4",
+    "idb-keyval": "^6.2.1"
+  }
+}

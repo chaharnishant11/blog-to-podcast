@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog-to-Podcast</title>
+  <style>
+    :root {
+      --primary: #4285f4;
+      --primary-dark: #3367d6;
+      --primary-light: #e8f0fe;
+      --secondary: #34a853;
+      --error: #ea4335;
+      --warning: #fbbc05;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --border: #dadce0;
+      --background: #ffffff;
+      --background-secondary: #f8f9fa;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      width: 340px;
+      color: var(--text-primary);
+      background-color: var(--background);
+    }
+    
+    .header {
+      background-color: var(--primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      font-weight: 500;
+    }
+    
+    .container {
+      padding: 16px;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+      text-align: center;
+    }
+    
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .card-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .card-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    
+    .button {
+      display: inline-block;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      margin: 4px;
+    }
+    
+    .button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .button.secondary {
+      background-color: var(--background-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    
+    .button.secondary:hover {
+      background-color: var(--border);
+    }
+    
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background-color: var(--background-secondary);
+      border-top: 1px solid var(--border);
+    }
+    
+    .player {
+      margin-top: 16px;
+    }
+    
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    
+    .progress-container {
+      height: 4px;
+      background-color: var(--border);
+      border-radius: 2px;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: var(--primary);
+      border-radius: 2px;
+      width: 0%;
+    }
+    
+    .time-display {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: right;
+    }
+    
+    .settings {
+      margin-top: 16px;
+    }
+    
+    .settings select {
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin-right: 8px;
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Blog-to-Podcast</h1>
+  </div>
+  
+  <div class="container">
+    <!-- Not Configured View -->
+    <div id="not-configured-view" class="card hidden">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Setup Required</div>
+      <div class="card-text">Please configure your API keys in the options page to use this extension.</div>
+      <button id="open-options-btn" class="button">Open Options</button>
+    </div>
+    
+    <!-- No Article View -->
+    <div id="no-article-view" class="card">
+      <div class="card-icon">📄</div>
+      <div class="card-title">No article detected</div>
+      <div class="card-text">Try selecting some text and clicking the button below.</div>
+      <button id="convert-selection-btn" class="button">Convert Selection</button>
+    </div>
+    
+    <!-- Processing View -->
+    <div id="processing-view" class="card hidden">
+      <div class="card-icon">
+        <div class="spinner" style="width: 32px; height: 32px; border-width: 3px;"></div>
+      </div>
+      <div class="card-title">Processing Article</div>
+      <div id="progress-text" class="card-text">Converting article to audio...</div>
+    </div>
+    
+    <!-- Error View -->
+    <div id="error-view" class="card hidden">
+      <div class="card-icon">❌</div>
+      <div class="card-title">Error</div>
+      <div id="error-message" class="card-text">An error occurred while processing the article.</div>
+      <button id="retry-btn" class="button">Try Again</button>
+    </div>
+    
+    <!-- Player View -->
+    <div id="player-view" class="card hidden">
+      <div class="card-title" id="article-title">Article Title</div>
+      
+      <div class="player">
+        <div class="controls">
+          <button id="prev-chunk-btn" class="button secondary">
+            ⏮️
+          </button>
+          <button id="play-btn" class="button">
+            ▶️
+          </button>
+          <button id="pause-btn" class="button hidden">
+            ⏸️
+          </button>
+          <button id="next-chunk-btn" class="button secondary">
+            ⏭️
+          </button>
+        </div>
+        
+        <div class="progress-container">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        
+        <div class="time-display">
+          <span id="time-display">0:00 / 0:00</span>
+          <span id="chunk-indicator">Chunk 1 of 1</span>
+        </div>
+        
+        <div class="settings">
+          <select id="voice-select">
+            <option value="en-US-Neural2-F">US Female</option>
+            <option value="en-US-Neural2-M">US Male</option>
+            <option value="en-GB-Neural2-F">UK Female</option>
+            <option value="en-GB-Neural2-M">UK Male</option>
+          </select>
+          
+          <select id="speed-select">
+            <option value="0.8">0.8x</option>
+            <option value="0.9">0.9x</option>
+            <option value="1.0" selected>1.0x</option>
+            <option value="1.1">1.1x</option>
+            <option value="1.2">1.2x</option>
+            <option value="1.3">1.3x</option>
+            <option value="1.5">1.5x</option>
+          </select>
+          
+          <button id="download-btn" class="button secondary">
+            ⬇️ Download
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <button id="options-btn" class="button secondary">Options</button>
+    <button id="debug-btn" class="button secondary">Debug Info</button>
+  </div>
+  
+  <!-- Debug Section -->
+  <div id="debug-section" class="hidden" style="padding: 16px; border-top: 1px solid var(--border);">
+    <h3>Debug Information</h3>
+    <div id="debug-info" style="font-family: monospace; font-size: 12px; margin-top: 8px; white-space: pre-wrap;"></div>
+    <button id="refresh-debug-btn" class="button secondary" style="margin-top: 8px;">Refresh</button>
+    <button id="clear-logs-btn" class="button secondary" style="margin-top: 8px;">Clear Logs</button>
+  </div>
+  
+  <!-- Audio Element -->
+  <audio id="audio-element" style="display: none;"></audio>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
