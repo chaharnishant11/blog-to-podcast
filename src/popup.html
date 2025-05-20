@@ -168,6 +168,18 @@
       animation: spin 1s ease-in-out infinite;
     }
     
+    .progress, .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--background);
+      border-top: 2px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
     @keyframes spin {
       to { transform: rotate(360deg); }
     }

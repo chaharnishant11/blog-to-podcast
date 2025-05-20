@@ -237,7 +237,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           message.text, 
           message.title || 'Article', 
           message.url || (sender.tab ? sender.tab.url : 'unknown'),
-          message.extractionMethod || 'unknown'
+          message.extractionMethod || 'unknown',
+          message.isRetry || false
         );
         cleanupAndRespond({ status: 'processing' });
         return false; // Synchronous response
@@ -323,7 +324,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Handle article text from content script
-async function handleArticleText(text, title, url, extractionMethod = 'unknown') {
+async function handleArticleText(text, title, url, extractionMethod = 'unknown', isRetry = false) {
+  console.log('Handling article text', { textLength: text.length, title, isRetry });
+  
+  // For retry operations, clear any lingering state
+  if (isRetry) {
+    console.log('Retry operation detected, cleaning up previous state for URL:', url);
+    
+    // Remove any active jobs for this URL
+    for (const jobId in activeJobs) {
+      if (activeJobs[jobId].url === url) {
+        console.log('Removing stale active job for URL:', url, 'Job ID:', jobId);
+        delete activeJobs[jobId];
+      }
+    }
+    
+    // Also remove from job queue
+    jobQueue = jobQueue.filter(job => job.url !== url);
+  }
   // Initialize variables for text processing
   let processedText = text;
   let originalText = text;
@@ -335,7 +353,12 @@ async function handleArticleText(text, title, url, extractionMethod = 'unknown')
   }, 5000); // Update every 5 seconds
 
   try {
-    logEvent('article_received', { title, url, textLength: text.length, extractionMethod });
+    logEvent('article_processing_started', { 
+      textLength: text.length,
+      titleLength: title.length,
+      extractionMethod,
+      isRetry
+    });
     console.log('Service worker received article text', {
       title,
       url,
@@ -719,7 +742,7 @@ async function processJob(job) {
         
         // Update article status
         if (allProcessed) {
-          articleData.status = 'completed';
+          articleData.status = 'complete';
           logEvent('article_completed', { 
             url: job.articleUrl,
             status: articleData.status,

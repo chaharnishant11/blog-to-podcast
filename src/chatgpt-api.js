@@ -95,16 +95,12 @@ class ChatGPTAPI {
     // Add instructions for pauses
     systemMessage += `\n\nInclude natural pauses and breaks in the script using the following notation:
     - [pause-short] for brief pauses (about 1 second)
-    - [pause-medium] for medium pauses (about 2-3 seconds)
-    - [pause-long] for longer pauses (about 4-5 seconds)
     
     Place these pauses at natural points like:
     - Between topic transitions
     - After important points that need to sink in
     - Before introducing new concepts
     - When switching between explanation and examples
-    
-    Also include vocal cues in brackets like [enthusiastic], [thoughtful], [serious] to guide the tone.
     
     Format the script to be easily readable with paragraphs and sections.`;
     

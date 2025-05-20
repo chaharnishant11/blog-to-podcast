@@ -79,6 +79,47 @@ function initializePopup() {
     }
   }, 100);
   
+  // Setup message listener for status updates from service worker
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Popup received message:', message.type, message);
+    
+    if (message.type === 'CHUNK_READY') {
+      // Check if this message is for our current article
+      if (message.articleUrl === currentArticleUrl) {
+        console.log('Received CHUNK_READY for current article', message);
+        
+        // Force refresh the article data from storage
+        chrome.storage.local.get(['article_' + currentArticleUrl], (result) => {
+          const articleData = result['article_' + currentArticleUrl];
+          
+          if (articleData) {
+            console.log('Article data updated from storage after CHUNK_READY', articleData);
+            currentArticleData = articleData;
+            
+            // Check status in both the message and the article data
+            if (message.allReady === true || articleData.status === 'complete') {
+              console.log('All chunks ready, showing player. Status:', articleData.status);
+              showView('player');
+              loadAudio(0);
+            } else {
+              // Still processing, update the view and progress text
+              showView('processing');
+              // Update progress text to show which chunk was just completed
+              const chunksTotal = articleData.chunks?.length || '?';
+              const chunksComplete = message.chunkIndex + 1;
+              progressText.textContent = `Processing... ${chunksComplete} of ${chunksTotal} chunks complete`;
+              console.log(`Updated progress: ${chunksComplete}/${chunksTotal} chunks processed`);
+            }
+          }
+        });
+      }
+      
+      // Acknowledge receipt
+      sendResponse({ received: true });
+      return true; // Keep channel open for async response
+    }
+  });
+  
   console.log('Popup initialized');
 }
 
@@ -427,8 +468,62 @@ function convertSelection() {
 
 // Retry conversion
 function retryConversion() {
-  console.log('Retrying conversion');
-  checkCurrentTab();
+  console.log('Retrying conversion for URL:', currentArticleUrl);
+  
+  // Add visual feedback that retry is in progress
+  retryBtn.innerHTML = '<span class="spinner" style="width: 12px; height: 12px; margin-right: 6px;"></span> Retrying...';
+  retryBtn.disabled = true;
+  
+  if (!currentArticleUrl) {
+    console.error('No article URL to retry');
+    showStatus('Error: No article URL to retry');
+    
+    // Reset retry button after delay
+    setTimeout(() => {
+      retryBtn.textContent = 'Try Again';
+      retryBtn.disabled = false;
+    }, 1000);
+    return;
+  }
+  
+  // First delete the current article data from storage
+  chrome.storage.local.remove(['article_' + currentArticleUrl], () => {
+    console.log('Removed article data from storage to enable clean retry');
+    
+    // Also clear from memory
+    currentArticleData = null;
+    
+    // Switch to processing view
+    showView('processing');
+    progressText.textContent = 'Retrying article processing...';
+    
+    // Request fresh processing of the article
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs.length === 0) {
+        console.error('No active tab found for retry');
+        showView('error');
+        errorMessage.textContent = 'Could not find the current tab for retry.';
+        return;
+      }
+      
+      // Send message to content script to restart article extraction
+      chrome.tabs.sendMessage(tabs[0].id, { type: 'CONVERT_ARTICLE', retry: true }, (response) => {
+        // Reset retry button
+        retryBtn.textContent = 'Try Again';
+        retryBtn.disabled = false;
+        
+        if (chrome.runtime.lastError || !response) {
+          console.error('Error during retry:', chrome.runtime.lastError);
+          showView('error');
+          errorMessage.textContent = 'Could not communicate with the page. Please refresh and try again.';
+        } else {
+          console.log('Article retry initiated successfully');
+          // updateProcessingProgress will handle polling for updates
+          updateProcessingProgress();
+        }
+      });
+    });
+  });
 }
 
 // Handle voice change
@@ -538,20 +633,28 @@ function updateProcessingProgress() {
         // Still processing
         let progressMessage = 'Processing...';
         
-        if (articleData.progress) {
+        // Provide more detailed progress if we have audio URLs
+        if (articleData.audioUrls && Array.isArray(articleData.audioUrls)) {
+          const completed = articleData.audioUrls.filter(url => url !== null).length;
+          const total = articleData.chunks?.length || articleData.audioUrls.length;
+          progressMessage = `Processing... ${completed} of ${total} chunks complete`;
+        } else if (articleData.progress) {
           progressMessage = `Processing... ${articleData.progress}`;
         }
         
+        console.log('Processing status update:', progressMessage);
         progressText.textContent = progressMessage;
         
         // Check again in 1 second
         setTimeout(checkProgress, 1000);
       } else if (articleData.status === 'error') {
         // Error occurred
+        console.log('Error status detected:', articleData.error);
         showView('error');
         errorMessage.textContent = articleData.error || 'An unknown error occurred';
       } else if (articleData.status === 'complete') {
         // Processing complete
+        console.log('Processing complete, showing player view');
         showView('player');
         loadAudio(0);
       }

@@ -248,9 +248,22 @@ function sendArticleToServiceWorker(text, title, url, extractionMethod) {
 }
 
 // Extract article text using multiple fallback methods
-async function extractArticle() {
-  console.log('Extracting article text');
+async function extractArticle(isRetry = false) {
+  console.log('Extracting article text', { isRetry });
   let extractionMethod = 'unknown';
+  
+  // If not a retry and we already have article text cached, use it
+  if (!isRetry && articleText && articleTitle) {
+    console.log('Using cached article text (not a retry)');
+    // Send the article data to service worker
+    chrome.runtime.sendMessage({
+      type: 'ARTICLE_TEXT',
+      text: articleText,
+      title: articleTitle,
+      extractionMethod: 'cached'
+    });
+    return;
+  }
   
   try {
     // Method 1: Try to find article content using common selectors
@@ -499,18 +512,29 @@ async function extractArticle() {
         
       case 'CONVERT_ARTICLE':
         // Extract and convert article
-        extractArticle()
+        const isRetry = message.retry === true;
+        
+        // Force clear cached article data if this is a retry
+        if (isRetry) {
+          console.log('Retry requested - clearing cached article data');
+          articleText = null;
+          articleTitle = null;
+        }
+        
+        extractArticle(isRetry)
           .then(() => {
-            console.log('Article extraction complete');
+            console.log('Article extraction complete', { wasRetry: isRetry });
           })
           .catch(error => {
-            console.error('Article extraction failed:', error);
+            console.error('Article extraction failed:', error, { wasRetry: isRetry });
             chrome.runtime.sendMessage({
               type: 'ERROR',
-              error: error.message || 'Failed to extract article text'
+              error: error.message || 'Failed to extract article text',
+              isRetry: isRetry
             });
           });
-        sendResponse({ status: 'extracting' });
+        
+        sendResponse({ status: 'extracting', isRetry: isRetry });
         break;
         
       default:
